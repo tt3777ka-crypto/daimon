@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="サロン予約">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#c98a9c">
+<title>サロン予約 - 月曜日限定</title>
+<style>
+  :root{
+    --main:#c98a9c;
+    --main-dark:#b06f82;
+    --bg:#fdf6f4;
+    --card:#ffffff;
+    --line:#eee0e0;
+    --text:#4a3a3a;
+    --sub:#9a8585;
+    --ok:#7fb88f;
+    --ok-bg:#e8f5ea;
+    --busy:#d98b8b;
+    --busy-bg:#fbe9e9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-bottom:40px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--main),var(--main-dark));
+    color:#fff;
+    padding:22px 16px 18px;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size:1.3rem;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  header p{
+    margin:0;
+    font-size:.8rem;
+    opacity:.92;
+  }
+  .sync-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.18);
+    border-radius:20px;
+    padding:4px 12px;
+    font-size:.72rem;
+    margin-top:8px;
+  }
+  .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:#9be8ab;
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .container{max-width:560px;margin:0 auto;padding:16px;}
+
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);
+    border-radius:14px;
+    padding:10px 14px;
+    margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .nav button{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--main-dark);
+    padding:8px 14px;
+    border-radius:10px;
+    font-size:.85rem;
+    cursor:pointer;
+  }
+  .nav .date-label{
+    font-weight:600;
+    font-size:.95rem;
+    text-align:center;
+  }
+
+  .legend{
+    display:flex;gap:14px;justify-content:center;
+    font-size:.78rem;color:var(--sub);
+    margin-bottom:14px;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend .sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+
+  .closed-card{
+    background:var(--card);
+    border-radius:16px;
+    padding:36px 20px;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    color:var(--sub);
+  }
+  .closed-card .big{
+    font-size:2.2rem;
+    margin-bottom:8px;
+  }
+
+  .slot-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .slot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--card);
+    border-radius:12px;
+    padding:12px 16px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05);
+    border:1px solid var(--line);
+  }
+  .slot .time{
+    font-weight:600;
+    font-size:.95rem;
+    width:78px;
+  }
+  .slot .status{
+    flex:1;
+    text-align:center;
+    font-size:.82rem;
+    font-weight:600;
+  }
+  .slot.open .status{color:var(--ok);}
+  .slot.busy .status{color:var(--busy);}
+  .slot button{
+    border:none;
+    padding:8px 16px;
+    border-radius:10px;
+    font-size:.82rem;
+    font-weight:600;
+    cursor:pointer;
+    color:#fff;
+  }
+  .slot.open button{background:var(--main);}
+  .slot.open button:hover{background:var(--main-dark);}
+  .slot.busy button{background:#cfc3c3;cursor:not-allowed;}
+  .slot.closed{opacity:.5;}
+  .slot.closed button{background:#cfc3c3;cursor:not-allowed;}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:#fff;
+    border-radius:18px;
+    padding:24px 22px;
+    width:100%;
+    max-width:380px;
+  }
+  .modal h2{
+    margin:0 0 4px;
+    font-size:1.1rem;
+  }
+  .modal .sub{
+    color:var(--sub);
+    font-size:.85rem;
+    margin-bottom:16px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:.8rem;
+    color:var(--sub);
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    font-size:.95rem;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:11px;
+    border-radius:10px;
+    border:none;
+    font-size:.9rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-cancel{background:var(--bg);color:var(--sub);}
+  .btn-confirm{background:var(--main);color:#fff;}
+  .btn-confirm:hover{background:var(--main-dark);}
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#3c2f2f;
+    color:#fff;
+    padding:11px 20px;
+    border-radius:30px;
+    font-size:.85rem;
+    opacity:0;
+    transition:.25s;
+    z-index:60;
+    pointer-events:none;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💇 サロン予約</h1>
+  <p>毎週月曜日 営業 9:00〜19:00（30分単位）</p>
+  <div class="sync-badge"><span class="dot"></span> リアルタイム同期中</div>
+</header>
+
+<div class="container">
+
+  <div class="nav">
+    <button id="prevWeek">← 前の月曜</button>
+    <div class="date-label" id="dateLabel">-</div>
+    <button id="nextWeek">次の月曜 →</button>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw" style="background:var(--ok-bg);border:1px solid var(--ok);"></span>空き</span>
+    <span><span class="sw" style="background:var(--busy-bg);border:1px solid var(--busy);"></span>予約済み</span>
+  </div>
+
+  <div id="content"></div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>ご予約</h2>
+    <div class="sub" id="modalDateTime">-</div>
+    <div class="field">
+      <label>お名前</label>
+      <input type="text" id="nameInput" placeholder="山田 太郎">
+    </div>
+    <div class="field">
+      <label>電話番号</label>
+      <input type="tel" id="phoneInput" placeholder="090xxxxxxxx">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelBtn">やめる</button>
+      <button class="btn-confirm" id="confirmBtn">予約する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">予約しました</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ====== Firebase 設定（オーナー側と必ず同じ設定にしてください） ======
+const firebaseConfig = {
+  apiKey: "AIzaSyC6MIhkE9m9aZAkAJ9mEZgsRsbKeVdCw_A",
+  authDomain: "daimon-re.firebaseapp.com",
+  databaseURL: "https://daimon-re-default-rtdb.firebaseio.com",
+  projectId: "daimon-re",
+  storageBucket: "daimon-re.firebasestorage.app",
+  messagingSenderId: "909427241209",
+  appId: "1:909427241209:web:440f847dbbd1d3802fb228"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ====== 設定値 ======
+const START_HOUR = 9;
+const END_HOUR = 19; // 19:00で終了（最後のコマは18:30開始）
+const SLOT_MIN = 30;
+
+function pad(n){return n.toString().padStart(2,'0');}
+
+function generateSlots(){
+  const slots = [];
+  let h = START_HOUR, m = 0;
+  while(h < END_HOUR || (h === END_HOUR && m === 0)){
+    if(h === END_HOUR) break;
+    slots.push(`${pad(h)}:${pad(m)}`);
+    m += SLOT_MIN;
+    if(m >= 60){m = 0; h += 1;}
+  }
+  return slots;
+}
+const SLOTS = generateSlots();
+
+// 直近の「月曜日」の0時を返す。weekOffset週分ずらす。
+function getMondayOfWeek(baseDate, weekOffset){
+  const d = new Date(baseDate);
+  d.setHours(0,0,0,0);
+  const day = d.getDay(); // 0=Sun ... 1=Mon
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diffToMonday + weekOffset*7);
+  return d;
+}
+
+function formatDateKey(d){
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function formatDateLabel(d){
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（月）`;
+}
+
+let weekOffset = 0;
+// 今日がすでに月曜より後ならweekOffset計算は getMondayOfWeek内で対応済み（直近の月曜、今週含む）
+let currentMonday = getMondayOfWeek(new Date(), 0);
+
+const dateLabel = document.getElementById('dateLabel');
+const content = document.getElementById('content');
+const overlay = document.getElementById('overlay');
+const modalDateTime = document.getElementById('modalDateTime');
+const nameInput = document.getElementById('nameInput');
+const phoneInput = document.getElementById('phoneInput');
+const toast = document.getElementById('toast');
+
+let currentData = {}; // 現在の週の予約データ {time: {name, phone}} or {time: 'closed'}
+let selectedSlot = null;
+let isHoliday = false;
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2200);
+}
+
+function renderClosed(){
+  content.innerHTML = `
+    <div class="closed-card">
+      <div class="big">🌙</div>
+      <div>この週はお休みです</div>
+    </div>`;
+}
+
+function renderSlots(dateKey){
+  let html = '<div class="slot-list">';
+  SLOTS.forEach(time=>{
+    const entry = currentData[time];
+    let stateClass, statusText, btnText, disabled;
+    if(entry === 'closed'){
+      stateClass = 'closed'; statusText='休業'; btnText='休業中'; disabled=true;
+    } else if(entry && typeof entry === 'object'){
+      stateClass = 'busy'; statusText='予約済み'; btnText='予約済'; disabled=true;
+    } else {
+      stateClass = 'open'; statusText='空き'; btnText='予約する'; disabled=false;
+    }
+    html += `
+      <div class="slot ${stateClass}">
+        <div class="time">${time}</div>
+        <div class="status">${statusText}</div>
+        <button ${disabled?'disabled':''} onclick="openModal('${dateKey}','${time}')">${btnText}</button>
+      </div>`;
+  });
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+let dbRef = null;
+function listenToWeek(){
+  const dateKey = formatDateKey(currentMonday);
+  dateLabel.textContent = formatDateLabel(currentMonday);
+
+  if(dbRef) dbRef.off();
+  dbRef = db.ref('reservations/' + dateKey);
+
+  dbRef.on('value', snapshot=>{
+    const val = snapshot.val() || {};
+    if(val.__holiday__ === true){
+      isHoliday = true;
+      currentData = {};
+      renderClosed();
+    } else {
+      isHoliday = false;
+      currentData = val;
+      renderSlots(dateKey);
+    }
+  });
+}
+
+document.getElementById('prevWeek').onclick = ()=>{
+  currentMonday.setDate(currentMonday.getDate()-7);
+  listenToWeek();
+};
+document.getElementById('nextWeek').onclick = ()=>{
+  currentMonday.setDate(currentMonday.getDate()+7);
+  listenToWeek();
+};
+
+window.openModal = function(dateKey, time){
+  if(currentData[time] && currentData[time] !== undefined && typeof currentData[time]==='object'){
+    return; // already booked
+  }
+  selectedSlot = {dateKey, time};
+  modalDateTime.textContent = `${formatDateLabel(currentMonday)} ${time}〜`;
+  nameInput.value=''; phoneInput.value='';
+  overlay.classList.add('show');
+};
+
+document.getElementById('cancelBtn').onclick = ()=>{
+  overlay.classList.remove('show');
+  selectedSlot = null;
+};
+
+document.getElementById('confirmBtn').onclick = ()=>{
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  if(!name){ showToast('お名前を入力してください'); return; }
+  if(!selectedSlot) return;
+
+  const ref = db.ref(`reservations/${selectedSlot.dateKey}/${selectedSlot.time}`);
+  ref.transaction(current=>{
+    if(current === null || current === undefined){
+      return { name, phone, createdAt: Date.now() };
+    }
+    return current; // already taken, abort effectively
+  }, (error, committed)=>{
+    if(error){
+      showToast('エラーが発生しました');
+    } else if(!committed){
+      showToast('すでに予約が入っています');
+    } else {
+      showToast('予約しました！');
+      overlay.classList.remove('show');
+      selectedSlot = null;
+    }
+  });
+};
+
+overlay.addEventListener('click', (e)=>{
+  if(e.target === overlay){
+    overlay.classList.remove('show');
+    selectedSlot = null;
+  }
+});
+
+listenToWeek();
+</script>
+</body>
+</html>
