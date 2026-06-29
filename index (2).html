@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="サロン予約">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#c98a9c">
+<title>サロン予約 - 月曜日限定</title>
+<style>
+  :root{
+    --main:#c98a9c;
+    --main-dark:#b06f82;
+    --bg:#0f2e1d;
+    --panel-bg:#fdf6f4;
+    --card:#ffffff;
+    --line:#eee0e0;
+    --text:#4a3a3a;
+    --sub:#9a8585;
+    --ok:#7fb88f;
+    --ok-bg:#e8f5ea;
+    --busy:#d98b8b;
+    --busy-bg:#fbe9e9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-bottom:60px;
+  }
+  header{
+    background:linear-gradient(135deg,var(--main),var(--main-dark));
+    color:#fff;
+    padding:22px 16px 18px;
+    text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  }
+  header h1{margin:0 0 4px;font-size:1.3rem;font-weight:600;letter-spacing:.02em;}
+  header p{margin:0;font-size:.8rem;opacity:.92;}
+  .sync-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,0.18);border-radius:20px;
+    padding:4px 12px;font-size:.72rem;margin-top:8px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#9be8ab;animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .container{max-width:560px;margin:0 auto;padding:16px;}
+
+  .tabs{
+    display:flex;background:var(--card);border-radius:14px;padding:4px;
+    margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .tabs button{
+    flex:1;border:none;background:none;padding:10px;border-radius:10px;
+    font-size:.85rem;font-weight:600;color:var(--sub);cursor:pointer;
+  }
+  .tabs button.active{background:var(--main);color:#fff;}
+
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border-radius:14px;padding:10px 14px;
+    margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .nav button{
+    background:var(--panel-bg);border:1px solid var(--line);color:var(--main-dark);
+    padding:8px 14px;border-radius:10px;font-size:.85rem;cursor:pointer;
+  }
+  .nav .date-label{font-weight:600;font-size:.95rem;text-align:center;}
+
+  .legend{display:flex;gap:14px;justify-content:center;font-size:.78rem;color:var(--sub);margin-bottom:14px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend .sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+
+  .closed-card{
+    background:var(--card);border-radius:16px;padding:36px 20px;text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);color:var(--sub);
+  }
+  .closed-card .big{font-size:2.2rem;margin-bottom:8px;}
+
+  .slot-list{display:flex;flex-direction:column;gap:8px;}
+  .slot{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border-radius:12px;padding:12px 16px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05);border:1px solid var(--line);
+  }
+  .slot .time{font-weight:600;font-size:.95rem;width:78px;}
+  .slot .status{flex:1;text-align:center;font-size:.82rem;font-weight:600;}
+  .slot.open .status{color:var(--ok);}
+  .slot.busy .status{color:var(--busy);}
+  .slot button{
+    border:none;padding:8px 16px;border-radius:10px;font-size:.82rem;
+    font-weight:600;cursor:pointer;color:#fff;
+  }
+  .slot.open button{background:var(--main);}
+  .slot.open button:hover{background:var(--main-dark);}
+  .slot.busy button{background:#cfc3c3;cursor:not-allowed;}
+  .slot.closed{opacity:.5;}
+  .slot.closed button{background:#cfc3c3;cursor:not-allowed;}
+
+  /* My reservations panel */
+  .my-list{display:flex;flex-direction:column;gap:10px;}
+  .my-card{
+    background:var(--card);border-radius:14px;padding:16px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);border:1px solid var(--line);
+  }
+  .my-card .dt{font-weight:600;font-size:.95rem;margin-bottom:4px;}
+  .my-card .code{font-size:.78rem;color:var(--sub);margin-bottom:10px;}
+  .my-card .code b{color:var(--main-dark);font-size:.95rem;letter-spacing:.05em;}
+  .my-card button{
+    border:none;background:var(--busy-bg);color:var(--busy);
+    padding:8px 14px;border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;
+  }
+  .empty-note{color:var(--sub);font-size:.85rem;text-align:center;padding:30px 10px;}
+
+  .cancel-lookup{
+    background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+  }
+  .cancel-lookup p{font-size:.78rem;color:var(--sub);margin:0 0 10px;}
+  .cancel-lookup .row{display:flex;gap:8px;flex-wrap:wrap;}
+  .cancel-lookup input[type="date"],
+  .cancel-lookup input[type="text"]{
+    padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:.9rem;
+  }
+  .cancel-lookup input[type="text"]{flex:1;min-width:120px;}
+  .cancel-lookup button{
+    border:none;background:var(--main);color:#fff;padding:10px 16px;
+    border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer;
+  }
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:18px;padding:24px 22px;width:100%;max-width:380px;}
+  .modal h2{margin:0 0 4px;font-size:1.1rem;}
+  .modal .sub{color:var(--sub);font-size:.85rem;margin-bottom:16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:.8rem;color:var(--sub);margin-bottom:5px;}
+  .field input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:.95rem;}
+  .field .optional{color:var(--sub);font-size:.72rem;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .modal-actions button{
+    flex:1;padding:11px;border-radius:10px;border:none;font-size:.9rem;font-weight:600;cursor:pointer;
+  }
+  .btn-cancel{background:var(--panel-bg);color:var(--sub);}
+  .btn-confirm{background:var(--main);color:#fff;}
+  .btn-confirm:hover{background:var(--main-dark);}
+
+  .code-display{
+    text-align:center;background:var(--panel-bg);border-radius:14px;padding:20px;margin:16px 0;
+  }
+  .code-display .label{font-size:.78rem;color:var(--sub);margin-bottom:6px;}
+  .code-display .code{font-size:1.8rem;font-weight:700;color:var(--main-dark);letter-spacing:.08em;}
+  .code-display .note{font-size:.72rem;color:var(--sub);margin-top:8px;line-height:1.5;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#3c2f2f;color:#fff;padding:11px 20px;border-radius:30px;font-size:.85rem;
+    opacity:0;transition:.25s;z-index:60;pointer-events:none;
+    max-width:90vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💇 サロン予約</h1>
+  <p>毎週月曜日 営業 16:00〜20:00（30分単位）</p>
+  <div class="sync-badge"><span class="dot"></span> リアルタイム同期中</div>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button id="tabBook" class="active">予約する</button>
+    <button id="tabMine">予約の確認・取消</button>
+  </div>
+
+  <!-- 予約画面 -->
+  <div id="bookPane">
+    <div class="nav">
+      <button id="prevWeek">← 前の月曜</button>
+      <div class="date-label" id="dateLabel">-</div>
+      <button id="nextWeek">次の月曜 →</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="sw" style="background:var(--ok-bg);border:1px solid var(--ok);"></span>空き</span>
+      <span><span class="sw" style="background:var(--busy-bg);border:1px solid var(--busy);"></span>予約済み</span>
+    </div>
+
+    <div id="content"></div>
+  </div>
+
+  <!-- マイ予約画面 -->
+  <div id="minePane" style="display:none;">
+    <div class="cancel-lookup">
+      <p>この端末で予約した記録が下に表示されます。別の端末から取消す場合は、予約日とキャンセル番号を入力してください。</p>
+      <div class="row">
+        <input type="date" id="lookupDate">
+        <input type="text" id="lookupCode" placeholder="6桁の番号" maxlength="6" inputmode="numeric">
+        <button id="lookupBtn">取消す</button>
+      </div>
+    </div>
+    <div class="my-list" id="myList"></div>
+  </div>
+
+</div>
+
+<!-- 予約モーダル -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>ご予約</h2>
+    <div class="sub" id="modalDateTime">-</div>
+    <div class="field">
+      <label>お名前</label>
+      <input type="text" id="nameInput" placeholder="山田 太郎">
+    </div>
+    <div class="field">
+      <label>電話番号</label>
+      <input type="tel" id="phoneInput" placeholder="090xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>メールアドレス <span class="optional">（任意・予約確認メールをお送りします）</span></label>
+      <input type="email" id="emailInput" placeholder="example@mail.com">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelBtn">やめる</button>
+      <button class="btn-confirm" id="confirmBtn">予約する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 予約完了（キャンセル番号表示）モーダル -->
+<div class="overlay" id="doneOverlay">
+  <div class="modal">
+    <h2>予約が完了しました</h2>
+    <div class="sub" id="doneDateTime">-</div>
+    <div class="code-display">
+      <div class="label">キャンセル番号</div>
+      <div class="code" id="doneCode">000000</div>
+      <div class="note">この番号は取消の際に必要です。スクリーンショットなどで保存してください。<br>メールアドレスを登録した場合は、メールにも記載しています。</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-confirm" id="doneCloseBtn" style="flex:1;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">完了しました</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ====== Firebase 設定（オーナー側と必ず同じ設定にしてください） ======
+const firebaseConfig = {
+  apiKey: "AIzaSyC6MIhkE9m9aZAkAJ9mEZgsRsbKeVdCw_A",
+  authDomain: "daimon-re.firebaseapp.com",
+  databaseURL: "https://daimon-re-default-rtdb.firebaseio.com",
+  projectId: "daimon-re",
+  storageBucket: "daimon-re.firebasestorage.app",
+  messagingSenderId: "909427241209",
+  appId: "1:909427241209:web:440f847dbbd1d3802fb228"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ====== Google Apps Script（メール通知・カレンダー登録） ======
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwNhzmrm0jE65Vhu07ZZ3DhaoenSLM10BFzYrbq9Usm3KBKl_wXYol8Wnu-GNUuWWPL/exec";
+
+function notifyGas(payload){
+  // GASのウェブアプリはCORSの制約上レスポンスを読めないことがあるため、結果は気にせず送信のみ行う
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  }).catch(e=>console.error('GAS notify error', e));
+}
+
+function sendBookingEmails(payload){
+  notifyGas({
+    action: 'book',
+    name: payload.name,
+    phone: payload.phone,
+    email: payload.email || '',
+    date: payload.dateKey,
+    time: payload.time,
+    cancelCode: payload.cancelCode
+  });
+}
+
+function notifyCancel(payload){
+  notifyGas({
+    action: 'cancel',
+    name: payload.name || '',
+    phone: payload.phone || '',
+    date: payload.dateKey,
+    time: payload.time
+  });
+}
+
+// ====== 設定値 ======
+const START_HOUR = 16;
+const END_HOUR = 20;
+const SLOT_MIN = 30;
+
+function pad(n){return n.toString().padStart(2,'0');}
+function generateSlots(){
+  const slots = [];
+  let h = START_HOUR, m = 0;
+  while(h < END_HOUR){
+    slots.push(`${pad(h)}:${pad(m)}`);
+    m += SLOT_MIN;
+    if(m >= 60){m = 0; h += 1;}
+  }
+  return slots;
+}
+const SLOTS = generateSlots();
+
+function getMondayOfWeek(baseDate, weekOffset){
+  const d = new Date(baseDate);
+  d.setHours(0,0,0,0);
+  const day = d.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diffToMonday + weekOffset*7);
+  return d;
+}
+function formatDateKey(d){
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function formatDateLabel(d){
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（月）`;
+}
+function generateCancelCode(){
+  return Math.floor(100000 + Math.random()*900000).toString();
+}
+
+let currentMonday = getMondayOfWeek(new Date(), 0);
+const dateLabel = document.getElementById('dateLabel');
+const content = document.getElementById('content');
+const overlay = document.getElementById('overlay');
+const modalDateTime = document.getElementById('modalDateTime');
+const nameInput = document.getElementById('nameInput');
+const phoneInput = document.getElementById('phoneInput');
+const emailInput = document.getElementById('emailInput');
+const toast = document.getElementById('toast');
+const doneOverlay = document.getElementById('doneOverlay');
+const doneDateTime = document.getElementById('doneDateTime');
+const doneCode = document.getElementById('doneCode');
+
+let currentStatus = {}; // {time: 'open'|'booked'|'closed'} 公開情報のみ
+let selectedSlot = null;
+let statusRef = null;
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+
+// ---------- localStorage: 自分の予約履歴を保持 ----------
+function loadMyReservations(){
+  try{
+    return JSON.parse(localStorage.getItem('myReservations') || '[]');
+  }catch(e){ return []; }
+}
+function saveMyReservation(entry){
+  const list = loadMyReservations();
+  list.unshift(entry);
+  localStorage.setItem('myReservations', JSON.stringify(list.slice(0,50)));
+}
+function removeMyReservation(dateKey, time){
+  const list = loadMyReservations().filter(r=>!(r.dateKey===dateKey && r.time===time));
+  localStorage.setItem('myReservations', JSON.stringify(list));
+}
+
+// ---------- タブ切替 ----------
+const tabBook = document.getElementById('tabBook');
+const tabMine = document.getElementById('tabMine');
+const bookPane = document.getElementById('bookPane');
+const minePane = document.getElementById('minePane');
+tabBook.onclick = ()=>{
+  tabBook.classList.add('active'); tabMine.classList.remove('active');
+  bookPane.style.display='block'; minePane.style.display='none';
+};
+tabMine.onclick = ()=>{
+  tabMine.classList.add('active'); tabBook.classList.remove('active');
+  bookPane.style.display='none'; minePane.style.display='block';
+  renderMyList();
+};
+
+function renderMyList(){
+  const list = loadMyReservations();
+  const myList = document.getElementById('myList');
+  if(list.length===0){
+    myList.innerHTML = '<div class="empty-note">この端末に保存されている予約はありません。<br>別の端末で予約した場合は、上の欄に予約日とキャンセル番号を入力してください。</div>';
+    return;
+  }
+  myList.innerHTML = list.map(r=>`
+    <div class="my-card">
+      <div class="dt">${r.dateLabel} ${r.time}〜</div>
+      <div class="code">キャンセル番号: <b>${r.cancelCode}</b></div>
+      <button onclick="cancelByCode('${r.dateKey}','${r.time}','${r.cancelCode}')">この予約を取消す</button>
+    </div>
+  `).join('');
+}
+
+// ---------- 予約状況の表示（公開状態のみ） ----------
+function renderClosed(){
+  content.innerHTML = `
+    <div class="closed-card">
+      <div class="big">🌙</div>
+      <div>この週はお休みです</div>
+    </div>`;
+}
+function renderSlots(dateKey){
+  let html = '<div class="slot-list">';
+  SLOTS.forEach(time=>{
+    const st = currentStatus[time] || 'open';
+    let stateClass, statusText, btnText, disabled;
+    if(st === 'closed'){
+      stateClass='closed'; statusText='休業'; btnText='休業中'; disabled=true;
+    } else if(st === 'booked'){
+      stateClass='busy'; statusText='予約済み'; btnText='予約済'; disabled=true;
+    } else {
+      stateClass='open'; statusText='空き'; btnText='予約する'; disabled=false;
+    }
+    html += `
+      <div class="slot ${stateClass}">
+        <div class="time">${time}</div>
+        <div class="status">${statusText}</div>
+        <button ${disabled?'disabled':''} onclick="openModal('${dateKey}','${time}')">${btnText}</button>
+      </div>`;
+  });
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+function listenToWeek(){
+  const dateKey = formatDateKey(currentMonday);
+  dateLabel.textContent = formatDateLabel(currentMonday);
+  if(statusRef) statusRef.off();
+  statusRef = db.ref('status/' + dateKey);
+  statusRef.on('value', snapshot=>{
+    const val = snapshot.val() || {};
+    if(val.__holiday__ === true){
+      currentStatus = {};
+      renderClosed();
+    } else {
+      currentStatus = val;
+      renderSlots(dateKey);
+    }
+  });
+}
+document.getElementById('prevWeek').onclick = ()=>{ currentMonday.setDate(currentMonday.getDate()-7); listenToWeek(); };
+document.getElementById('nextWeek').onclick = ()=>{ currentMonday.setDate(currentMonday.getDate()+7); listenToWeek(); };
+
+// ---------- 予約モーダル ----------
+window.openModal = function(dateKey, time){
+  if((currentStatus[time]||'open') !== 'open') return;
+  selectedSlot = {dateKey, time};
+  modalDateTime.textContent = `${formatDateLabel(currentMonday)} ${time}〜`;
+  nameInput.value=''; phoneInput.value=''; emailInput.value='';
+  overlay.classList.add('show');
+};
+document.getElementById('cancelBtn').onclick = ()=>{
+  overlay.classList.remove('show'); selectedSlot=null;
+};
+document.getElementById('confirmBtn').onclick = ()=>{
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const email = emailInput.value.trim();
+  if(!name){ showToast('お名前を入力してください'); return; }
+  if(!selectedSlot) return;
+
+  const cancelCode = generateCancelCode();
+  const {dateKey, time} = selectedSlot;
+
+  // 1) 公開ステータスを 'open' -> 'booked' へトランザクションで確定
+  const statusSlotRef = db.ref(`status/${dateKey}/${time}`);
+  statusSlotRef.transaction(current=>{
+    if(current === null || current === undefined || current === 'open'){
+      return 'booked';
+    }
+    return current; // 既に埋まっている場合は変更しない
+  }, (error, committed, snapshot)=>{
+    if(error){ showToast('エラーが発生しました'); return; }
+    if(!committed || (snapshot && snapshot.val() !== 'booked')){
+      showToast('すでに予約が入っています'); return;
+    }
+    // 2) 非公開詳細を保存
+    db.ref(`private/${dateKey}/${time}`).set({
+      name, phone, email, cancelCode, createdAt: Date.now()
+    }).then(()=>{
+      const dateLabelStr = formatDateLabel(currentMonday);
+      saveMyReservation({dateKey, time, dateLabel: dateLabelStr, cancelCode});
+      sendBookingEmails({name, phone, email, dateKey, dateLabel: dateLabelStr, time, cancelCode});
+      overlay.classList.remove('show');
+      selectedSlot=null;
+      doneDateTime.textContent = `${dateLabelStr} ${time}〜`;
+      doneCode.textContent = cancelCode;
+      doneOverlay.classList.add('show');
+    });
+  });
+};
+document.getElementById('doneCloseBtn').onclick = ()=>{
+  doneOverlay.classList.remove('show');
+};
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ overlay.classList.remove('show'); selectedSlot=null; } });
+doneOverlay.addEventListener('click', (e)=>{ if(e.target===doneOverlay){ doneOverlay.classList.remove('show'); } });
+
+// ---------- キャンセル（番号方式） ----------
+window.cancelByCode = function(dateKey, time, code){
+  doCancel(dateKey, time, code);
+};
+document.getElementById('lookupBtn').onclick = ()=>{
+  const dateVal = document.getElementById('lookupDate').value; // yyyy-mm-dd
+  const code = document.getElementById('lookupCode').value.trim();
+  if(!dateVal){ showToast('予約日を選択してください'); return; }
+  if(code.length!==6){ showToast('6桁の番号を入力してください'); return; }
+  const d = new Date(dateVal + 'T00:00:00');
+  if(d.getDay() !== 1){ showToast('月曜日の日付を選んでください'); return; }
+  const dateKey = formatDateKey(d);
+  // この日のどの時間か分からないため、全時間帯を検索
+  db.ref(`private/${dateKey}`).once('value').then(snap=>{
+    const data = snap.val() || {};
+    const foundTime = Object.keys(data).find(t => String(data[t].cancelCode) === code);
+    if(!foundTime){ showToast('該当する予約が見つかりません'); return; }
+    doCancel(dateKey, foundTime, code);
+  });
+};
+
+function doCancel(dateKey, time, code){
+  const privRef = db.ref(`private/${dateKey}/${time}`);
+  privRef.once('value').then(snap=>{
+    const data = snap.val();
+    if(!data){ showToast('対象の予約が見つかりません'); return; }
+    if(String(data.cancelCode) !== String(code)){
+      showToast('キャンセル番号が一致しません'); return;
+    }
+    if(!confirm('この予約を取り消します。よろしいですか？')) return;
+    Promise.all([
+      privRef.remove(),
+      db.ref(`status/${dateKey}/${time}`).set('open')
+    ]).then(()=>{
+      removeMyReservation(dateKey, time);
+      notifyCancel({name: data.name, phone: data.phone, dateKey, time});
+      showToast('予約を取り消しました');
+      renderMyList();
+    });
+  });
+};
+
+listenToWeek();
+</script>
+</body>
+</html>
